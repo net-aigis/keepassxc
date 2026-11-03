@@ -1410,7 +1410,17 @@ bool DatabaseWidget::syncWithCoordinator(const RemoteParams* params)
             fail(tr("Cannot read merged remote database."));
             return false;
         }
-        remoteEncrypted = merged.readAll();
+        // Keep aligned with KeySafe CoordinatorByteLimits::MAX_KDBX_BYTES (64 MiB).
+        constexpr qint64 maxKdbxBytes = 64LL * 1024 * 1024;
+        if (merged.size() > maxKdbxBytes) {
+            fail(tr("Merged database exceeds the permitted in-memory size."));
+            return false;
+        }
+        remoteEncrypted = merged.read(maxKdbxBytes + 1);
+        if (remoteEncrypted.size() > maxKdbxBytes) {
+            fail(tr("Merged database exceeds the permitted in-memory size."));
+            return false;
+        }
     } else {
         // Initial publication of an already opened, locally saved database.
         if (!save()) {
@@ -1422,7 +1432,16 @@ bool DatabaseWidget::syncWithCoordinator(const RemoteParams* params)
             fail(tr("Cannot read the local database for initial publication."));
             return false;
         }
-        remoteEncrypted = local.readAll();
+        constexpr qint64 maxKdbxBytes = 64LL * 1024 * 1024;
+        if (local.size() > maxKdbxBytes) {
+            fail(tr("Local database exceeds the permitted in-memory size."));
+            return false;
+        }
+        remoteEncrypted = local.read(maxKdbxBytes + 1);
+        if (remoteEncrypted.size() > maxKdbxBytes) {
+            fail(tr("Local database exceeds the permitted in-memory size."));
+            return false;
+        }
     }
 
     if (!client->hasLease()) {
