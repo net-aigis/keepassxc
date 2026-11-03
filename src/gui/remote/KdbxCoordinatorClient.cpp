@@ -8,6 +8,9 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QRegularExpression>
+#include <QSslConfiguration>
+#include <QSslError>
+#include <QSslSocket>
 #include <QTimer>
 
 KdbxCoordinatorClient::KdbxCoordinatorClient(const QUrl& service,
@@ -34,6 +37,9 @@ KdbxCoordinatorClient::~KdbxCoordinatorClient()
 {
     QString ignored;
     release(&ignored); // best effort; server lease expiry is the ultimate fallback
+    m_accessToken.fill(char(0));
+    m_lease.fill(char(0));
+    m_revision.fill(char(0));
 }
 
 void KdbxCoordinatorClient::invalidate()
@@ -70,6 +76,14 @@ constexpr qint64 MaxControlBytes = 16LL * 1024;
 }
 
 namespace {
+void applyCoordinatorTls(QNetworkRequest& req)
+{
+    QSslConfiguration ssl = QSslConfiguration::defaultConfiguration();
+    ssl.setProtocol(QSsl::TlsV1_2OrLater);
+    ssl.setPeerVerifyMode(QSslSocket::VerifyPeer);
+    req.setSslConfiguration(ssl);
+}
+
 QByteArray readBoundedBody(QNetworkReply* reply, qint64 maxBytes, QString* transportError)
 {
     const auto declared = reply->header(QNetworkRequest::ContentLengthHeader).toLongLong();
@@ -117,7 +131,8 @@ KdbxCoordinatorClient::Response KdbxCoordinatorClient::request(const QByteArray&
     }
     if (!m_service.userInfo().isEmpty() || m_service.hasQuery() || m_service.hasFragment() ||
         !QRegularExpression(QStringLiteral("^[a-z0-9_-]{1,96}$")).match(m_databaseId).hasMatch() ||
-        m_accessToken.size() < 32 || m_accessToken.contains('\n') || m_accessToken.contains('\r')) {
+        m_accessToken.size() < 32 || m_accessToken.size() > 1024 ||
+        m_accessToken.contains('\n') || m_accessToken.contains('\r')) {
         result.transportError = QStringLiteral("Invalid coordinator configuration");
         return result;
     }
@@ -131,6 +146,7 @@ KdbxCoordinatorClient::Response KdbxCoordinatorClient::request(const QByteArray&
                 QStringLiteral("/v1/databases/") + m_databaseId + action);
     QNetworkRequest req(url);
     req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::ManualRedirectPolicy);
+    applyCoordinatorTls(req);
     req.setRawHeader("Authorization", "Bearer " + m_accessToken);
     req.setRawHeader("Cache-Control", "no-store");
     req.setRawHeader("Accept", "application/json, application/octet-stream");
@@ -162,6 +178,10 @@ KdbxCoordinatorClient::Response KdbxCoordinatorClient::request(const QByteArray&
     timeout.setSingleShot(true);
     QObject::connect(&timeout, &QTimer::timeout, reply, &QNetworkReply::abort);
     QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+    // Never ignore certificate errors; abort so TLS failures stay transport errors.
+    QObject::connect(reply, &QNetworkReply::sslErrors, reply, [reply](const QList<QSslError>&) {
+        reply->abort();
+    });
     timeout.start(40000);
     if (!reply->isFinished()) {
         loop.exec();
