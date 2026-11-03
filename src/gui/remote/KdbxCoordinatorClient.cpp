@@ -63,6 +63,44 @@ QByteArray KdbxCoordinatorClient::field(const QByteArray& body, const QString& k
     return document.object().value(key).toString().toUtf8();
 }
 
+// Keep aligned with NetAigis KeySafe CoordinatorByteLimits.
+namespace KdbxCoordinatorLimits {
+constexpr qint64 MaxKdbxBytes = 64LL * 1024 * 1024;
+constexpr qint64 MaxControlBytes = 16LL * 1024;
+}
+
+namespace {
+QByteArray readBoundedBody(QNetworkReply* reply, qint64 maxBytes, QString* transportError)
+{
+    const auto declared = reply->header(QNetworkRequest::ContentLengthHeader).toLongLong();
+    if (declared > maxBytes) {
+        if (transportError) {
+            *transportError = QStringLiteral("Coordinator response exceeds permitted size");
+        }
+        return {};
+    }
+
+    QByteArray body;
+    if (declared > 0) {
+        body.reserve(static_cast<int>(qMin(declared, maxBytes)));
+    }
+    while (!reply->atEnd()) {
+        const QByteArray chunk = reply->read(64 * 1024);
+        if (chunk.isEmpty()) {
+            break;
+        }
+        if (static_cast<qint64>(body.size()) + chunk.size() > maxBytes) {
+            if (transportError) {
+                *transportError = QStringLiteral("Coordinator response exceeds permitted size");
+            }
+            return {};
+        }
+        body.append(chunk);
+    }
+    return body;
+}
+} // namespace
+
 KdbxCoordinatorClient::Response KdbxCoordinatorClient::request(const QByteArray& method,
                                                                  const QString& action,
                                                                  const QByteArray& payload,
@@ -81,6 +119,10 @@ KdbxCoordinatorClient::Response KdbxCoordinatorClient::request(const QByteArray&
         !QRegularExpression(QStringLiteral("^[a-z0-9_-]{1,96}$")).match(m_databaseId).hasMatch() ||
         m_accessToken.size() < 32 || m_accessToken.contains('\n') || m_accessToken.contains('\r')) {
         result.transportError = QStringLiteral("Invalid coordinator configuration");
+        return result;
+    }
+    if (static_cast<qint64>(payload.size()) > KdbxCoordinatorLimits::MaxKdbxBytes) {
+        result.transportError = QStringLiteral("KDBX exceeds permitted in-memory size");
         return result;
     }
 
@@ -127,8 +169,12 @@ KdbxCoordinatorClient::Response KdbxCoordinatorClient::request(const QByteArray&
     timeout.stop();
     result.status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     result.etag = reply->rawHeader("ETag");
-    result.bytes = reply->readAll();
-    if (reply->error() != QNetworkReply::NoError && result.status == 0) {
+    const qint64 maxBytes = (method == "GET" && action == QStringLiteral("/file"))
+        ? KdbxCoordinatorLimits::MaxKdbxBytes
+        : KdbxCoordinatorLimits::MaxControlBytes;
+    result.bytes = readBoundedBody(reply, maxBytes, &result.transportError);
+    if (reply->error() != QNetworkReply::NoError && result.status == 0 &&
+        result.transportError.isEmpty()) {
         result.transportError = reply->errorString();
     }
     reply->deleteLater();
@@ -194,6 +240,10 @@ bool KdbxCoordinatorClient::publish(const QByteArray& encryptedDatabase, QString
 {
     if (!hasLease() || encryptedDatabase.isEmpty()) {
         if (error) *error = QStringLiteral("No valid editing lease or empty database");
+        return false;
+    }
+    if (static_cast<qint64>(encryptedDatabase.size()) > KdbxCoordinatorLimits::MaxKdbxBytes) {
+        if (error) *error = QStringLiteral("KDBX exceeds permitted in-memory size");
         return false;
     }
     const auto result = request("PUT", QStringLiteral("/file"), encryptedDatabase, m_lease, m_revision);
