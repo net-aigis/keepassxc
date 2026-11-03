@@ -26,6 +26,8 @@
 #include "gui/MessageBox.h"
 
 #include <QFile>
+#include <QRegularExpression>
+#include <QUrl>
 
 DatabaseSettingsWidgetRemote::DatabaseSettingsWidgetRemote(QWidget* parent)
     : DatabaseSettingsWidget(parent)
@@ -103,11 +105,50 @@ void DatabaseSettingsWidgetRemote::saveCurrentSettings()
         return;
     }
 
+    const QString coordinatorUrl = m_ui->coordinatorUrl->text().trimmed();
+    const QString coordinatorDatabaseId = m_ui->coordinatorDatabaseId->text().trimmed();
+    const QString coordinatorAccessToken = m_ui->coordinatorAccessToken->text();
+    const bool coordinatorConfigured = !coordinatorUrl.isEmpty() || !coordinatorDatabaseId.isEmpty()
+        || !coordinatorAccessToken.isEmpty();
+    if (coordinatorConfigured) {
+        const QUrl service(coordinatorUrl);
+        const QString host = service.host();
+        const bool httpsOk = service.scheme() == QStringLiteral("https");
+        const bool loopbackHttpOk = service.scheme() == QStringLiteral("http")
+            && (host == QStringLiteral("localhost") || host == QStringLiteral("127.0.0.1"));
+        if (!httpsOk && !loopbackHttpOk) {
+            m_ui->messageWidget->showMessage(
+                tr("Coordinator URL must use HTTPS (HTTP only allowed for localhost)."),
+                MessageWidget::Warning);
+            return;
+        }
+        if (!QRegularExpression(QStringLiteral("^[a-z0-9_-]{1,96}$")).match(coordinatorDatabaseId).hasMatch()) {
+            m_ui->messageWidget->showMessage(
+                tr("Coordinator database ID must be 1-96 characters: a-z, 0-9, _ or -."),
+                MessageWidget::Warning);
+            return;
+        }
+        const QByteArray tokenBytes = coordinatorAccessToken.toUtf8();
+        bool printableAscii = tokenBytes.size() >= 32 && tokenBytes.size() <= 1024;
+        for (unsigned char c : tokenBytes) {
+            if (c < 0x21 || c > 0x7e) {
+                printableAscii = false;
+                break;
+            }
+        }
+        if (!printableAscii) {
+            m_ui->messageWidget->showMessage(
+                tr("Coordinator access token must be 32-1024 printable ASCII characters without whitespace."),
+                MessageWidget::Warning);
+            return;
+        }
+    }
+
     auto* params = new RemoteParams();
     params->name = m_ui->nameLineEdit->text();
-    params->coordinatorUrl = m_ui->coordinatorUrl->text().trimmed();
-    params->coordinatorDatabaseId = m_ui->coordinatorDatabaseId->text().trimmed();
-    params->coordinatorAccessToken = m_ui->coordinatorAccessToken->text();
+    params->coordinatorUrl = coordinatorUrl;
+    params->coordinatorDatabaseId = coordinatorDatabaseId;
+    params->coordinatorAccessToken = coordinatorAccessToken;
     params->downloadCommand = m_ui->downloadCommand->text();
     params->downloadInput = m_ui->inputForDownload->toPlainText();
     params->downloadTimeoutMsec = m_ui->downloadTimeoutSec->value() * 1000;
