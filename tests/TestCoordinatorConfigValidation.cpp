@@ -20,6 +20,7 @@ private slots:
     void matchesPublishAcknowledgement();
     void matchesDownloadedCiphertext();
     void byteLimitsMatchKeySafeCaps();
+    void extractsJsonStringFields();
 };
 
 void TestCoordinatorConfigValidation::acceptsHttpsAndToken()
@@ -141,6 +142,20 @@ void TestCoordinatorConfigValidation::byteLimitsMatchKeySafeCaps()
     QCOMPARE(CoordinatorByteLimits::MaxKdbxBytes, 64LL * 1024 * 1024);
     QCOMPARE(CoordinatorByteLimits::MaxControlBytes, 16LL * 1024);
     QVERIFY(CoordinatorByteLimits::MaxControlBytes < CoordinatorByteLimits::MaxKdbxBytes);
+}
+
+void TestCoordinatorConfigValidation::extractsJsonStringFields()
+{
+    QCOMPARE(CoordinatorConfigValidation::jsonStringField(
+                 QByteArrayLiteral("{\"token\":\"abc\",\"revision\":\"0\"}"),
+                 QStringLiteral("revision")),
+             QByteArrayLiteral("0"));
+    QCOMPARE(CoordinatorConfigValidation::jsonStringField(
+                 QByteArrayLiteral("{\"token\":\"abc\"}"), QStringLiteral("missing")),
+             QByteArray());
+    QCOMPARE(CoordinatorConfigValidation::jsonStringField(
+                 QByteArrayLiteral("not-json"), QStringLiteral("token")),
+             QByteArray());
 }
 
 QTEST_GUILESS_MAIN(TestCoordinatorConfigValidation)

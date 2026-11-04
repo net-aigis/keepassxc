@@ -64,12 +64,7 @@ QByteArray KdbxCoordinatorClient::hash(const QByteArray& bytes)
 
 QByteArray KdbxCoordinatorClient::field(const QByteArray& body, const QString& key)
 {
-    QJsonParseError parseError;
-    auto document = QJsonDocument::fromJson(body, &parseError);
-    if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
-        return {};
-    }
-    return document.object().value(key).toString().toUtf8();
+    return CoordinatorConfigValidation::jsonStringField(body, key);
 }
 
 namespace {

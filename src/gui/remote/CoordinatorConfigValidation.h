@@ -11,6 +11,9 @@
 namespace CoordinatorConfigValidation {
 QString validate(const QString& url, const QString& databaseId, const QString& accessToken);
 
+/** Extract a JSON string field; empty on parse error or missing key. */
+QByteArray jsonStringField(const QByteArray& body, const QString& key);
+
 /** Lease token: exactly 64 lowercase hex digits. */
 bool isValidLeaseToken(const QByteArray& token);
 

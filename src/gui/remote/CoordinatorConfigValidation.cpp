@@ -48,6 +48,16 @@ QString validate(const QString& url, const QString& databaseId, const QString& a
     return {};
 }
 
+QByteArray jsonStringField(const QByteArray& body, const QString& key)
+{
+    QJsonParseError parseError;
+    const auto document = QJsonDocument::fromJson(body, &parseError);
+    if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
+        return {};
+    }
+    return document.object().value(key).toString().toUtf8();
+}
+
 bool isValidLeaseToken(const QByteArray& token)
 {
     return hex64().match(QString::fromLatin1(token)).hasMatch();
@@ -60,14 +70,11 @@ bool isValidRevision(const QByteArray& revision)
 
 bool parseLeaseResponse(const QByteArray& body, LeaseFields* out)
 {
-    QJsonParseError parseError;
-    const auto document = QJsonDocument::fromJson(body, &parseError);
-    if (parseError.error != QJsonParseError::NoError || !document.isObject() || !out) {
+    if (!out) {
         return false;
     }
-    const QJsonObject object = document.object();
-    const QByteArray token = object.value(QStringLiteral("token")).toString().toUtf8();
-    const QByteArray revision = object.value(QStringLiteral("revision")).toString().toUtf8();
+    const QByteArray token = jsonStringField(body, QStringLiteral("token"));
+    const QByteArray revision = jsonStringField(body, QStringLiteral("revision"));
     if (!isValidLeaseToken(token) || !isValidRevision(revision)) {
         return false;
     }
@@ -83,13 +90,7 @@ bool matchesPublishAck(const QByteArray& body,
     if (!isValidLeaseToken(expectedRevisionHex)) {
         return false;
     }
-    QJsonParseError parseError;
-    const auto document = QJsonDocument::fromJson(body, &parseError);
-    if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
-        return false;
-    }
-    const QByteArray revision =
-        document.object().value(QStringLiteral("revision")).toString().toUtf8();
+    const QByteArray revision = jsonStringField(body, QStringLiteral("revision"));
     return revision == expectedRevisionHex && etag == '"' + expectedRevisionHex + '"';
 }
 
