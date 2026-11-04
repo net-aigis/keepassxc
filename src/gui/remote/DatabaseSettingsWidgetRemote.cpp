@@ -23,11 +23,10 @@
 
 #include "RemoteHandler.h"
 #include "RemoteSettings.h"
+#include "CoordinatorConfigValidation.h"
 #include "gui/MessageBox.h"
 
 #include <QFile>
-#include <QRegularExpression>
-#include <QUrl>
 
 DatabaseSettingsWidgetRemote::DatabaseSettingsWidgetRemote(QWidget* parent)
     : DatabaseSettingsWidget(parent)
@@ -111,35 +110,10 @@ void DatabaseSettingsWidgetRemote::saveCurrentSettings()
     const bool coordinatorConfigured = !coordinatorUrl.isEmpty() || !coordinatorDatabaseId.isEmpty()
         || !coordinatorAccessToken.isEmpty();
     if (coordinatorConfigured) {
-        const QUrl service(coordinatorUrl);
-        const QString host = service.host();
-        const bool httpsOk = service.scheme() == QStringLiteral("https");
-        const bool loopbackHttpOk = service.scheme() == QStringLiteral("http")
-            && (host == QStringLiteral("localhost") || host == QStringLiteral("127.0.0.1"));
-        if (!httpsOk && !loopbackHttpOk) {
-            m_ui->messageWidget->showMessage(
-                tr("Coordinator URL must use HTTPS (HTTP only allowed for localhost)."),
-                MessageWidget::Warning);
-            return;
-        }
-        if (!QRegularExpression(QStringLiteral("^[a-z0-9_-]{1,96}$")).match(coordinatorDatabaseId).hasMatch()) {
-            m_ui->messageWidget->showMessage(
-                tr("Coordinator database ID must be 1-96 characters: a-z, 0-9, _ or -."),
-                MessageWidget::Warning);
-            return;
-        }
-        const QByteArray tokenBytes = coordinatorAccessToken.toUtf8();
-        bool printableAscii = tokenBytes.size() >= 32 && tokenBytes.size() <= 1024;
-        for (unsigned char c : tokenBytes) {
-            if (c < 0x21 || c > 0x7e) {
-                printableAscii = false;
-                break;
-            }
-        }
-        if (!printableAscii) {
-            m_ui->messageWidget->showMessage(
-                tr("Coordinator access token must be 32-1024 printable ASCII characters without whitespace."),
-                MessageWidget::Warning);
+        const QString error = CoordinatorConfigValidation::validate(
+            coordinatorUrl, coordinatorDatabaseId, coordinatorAccessToken);
+        if (!error.isEmpty()) {
+            m_ui->messageWidget->showMessage(error, MessageWidget::Warning);
             return;
         }
     }

@@ -185,6 +185,7 @@ set(gui_SOURCES
         gui/remote/DatabaseSettingsWidgetRemote.cpp
         gui/remote/RemoteHandler.cpp
         gui/remote/KdbxCoordinatorClient.cpp
+        gui/remote/CoordinatorConfigValidation.cpp
         gui/remote/RemoteProcess.cpp
         gui/remote/RemoteSettings.cpp
         gui/reports/ReportsWidget.cpp
