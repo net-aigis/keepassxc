@@ -27,4 +27,12 @@ struct LeaseFields {
  * malformed or token/revision fail the hex rules above.
  */
 bool parseLeaseResponse(const QByteArray& body, LeaseFields* out);
+
+/**
+ * Publish acknowledgement must echo the SHA-256 of the uploaded ciphertext
+ * both in the JSON revision field and as a quoted ETag.
+ */
+bool matchesPublishAck(const QByteArray& body,
+                       const QByteArray& etag,
+                       const QByteArray& expectedRevisionHex);
 } // namespace CoordinatorConfigValidation

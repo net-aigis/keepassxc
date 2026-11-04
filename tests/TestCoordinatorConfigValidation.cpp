@@ -15,6 +15,7 @@ private slots:
     void acceptsLeaseResponse();
     void rejectsMalformedLeaseResponse();
     void validatesRevisionRules();
+    void matchesPublishAcknowledgement();
 };
 
 void TestCoordinatorConfigValidation::acceptsHttpsAndToken()
@@ -100,6 +101,18 @@ void TestCoordinatorConfigValidation::validatesRevisionRules()
     QVERIFY(!CoordinatorConfigValidation::isValidRevision(QByteArrayLiteral("1")));
     QVERIFY(!CoordinatorConfigValidation::isValidRevision(QByteArray(63, 'c')));
     QVERIFY(!CoordinatorConfigValidation::isValidLeaseToken(QByteArrayLiteral("0")));
+}
+
+void TestCoordinatorConfigValidation::matchesPublishAcknowledgement()
+{
+    const QByteArray rev = QByteArray(64, 'd');
+    const QByteArray body =
+        QByteArrayLiteral("{\"revision\":\"") + rev + QByteArrayLiteral("\"}");
+    QVERIFY(CoordinatorConfigValidation::matchesPublishAck(body, '"' + rev + '"', rev));
+    QVERIFY(!CoordinatorConfigValidation::matchesPublishAck(body, '"' + rev + '"', QByteArray(64, 'e')));
+    QVERIFY(!CoordinatorConfigValidation::matchesPublishAck(body, rev, rev)); // etag must be quoted
+    QVERIFY(!CoordinatorConfigValidation::matchesPublishAck(
+        QByteArrayLiteral("{\"revision\":\"0\"}"), "\"0\"", QByteArrayLiteral("0")));
 }
 
 QTEST_GUILESS_MAIN(TestCoordinatorConfigValidation)

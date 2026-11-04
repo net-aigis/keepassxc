@@ -267,7 +267,7 @@ bool KdbxCoordinatorClient::publish(const QByteArray& encryptedDatabase, QString
         return false;
     }
     const auto expected = hash(encryptedDatabase);
-    if (field(result.bytes, QStringLiteral("revision")) != expected || result.etag != '"' + expected + '"') {
+    if (!CoordinatorConfigValidation::matchesPublishAck(result.bytes, result.etag, expected)) {
         invalidate();
         if (error) *error = QStringLiteral("Publication acknowledgement mismatch");
         return false;

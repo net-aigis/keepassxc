@@ -75,4 +75,21 @@ bool parseLeaseResponse(const QByteArray& body, LeaseFields* out)
     return true;
 }
 
+bool matchesPublishAck(const QByteArray& body,
+                       const QByteArray& etag,
+                       const QByteArray& expectedRevisionHex)
+{
+    if (!isValidLeaseToken(expectedRevisionHex)) {
+        return false;
+    }
+    QJsonParseError parseError;
+    const auto document = QJsonDocument::fromJson(body, &parseError);
+    if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
+        return false;
+    }
+    const QByteArray revision =
+        document.object().value(QStringLiteral("revision")).toString().toUtf8();
+    return revision == expectedRevisionHex && etag == '"' + expectedRevisionHex + '"';
+}
+
 } // namespace CoordinatorConfigValidation
