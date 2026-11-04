@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include "KdbxCoordinatorClient.h"
 
+#include "CoordinatorByteLimits.h"
 #include "CoordinatorConfigValidation.h"
 
 #include <QCryptographicHash>
@@ -71,12 +72,6 @@ QByteArray KdbxCoordinatorClient::field(const QByteArray& body, const QString& k
     return document.object().value(key).toString().toUtf8();
 }
 
-// Keep aligned with NetAigis KeySafe CoordinatorByteLimits.
-namespace KdbxCoordinatorLimits {
-constexpr qint64 MaxKdbxBytes = 64LL * 1024 * 1024;
-constexpr qint64 MaxControlBytes = 16LL * 1024;
-}
-
 namespace {
 void applyCoordinatorTls(QNetworkRequest& req)
 {
@@ -131,7 +126,7 @@ KdbxCoordinatorClient::Response KdbxCoordinatorClient::request(const QByteArray&
         result.transportError = QStringLiteral("Invalid coordinator configuration");
         return result;
     }
-    if (static_cast<qint64>(payload.size()) > KdbxCoordinatorLimits::MaxKdbxBytes) {
+    if (static_cast<qint64>(payload.size()) > CoordinatorByteLimits::MaxKdbxBytes) {
         result.transportError = QStringLiteral("KDBX exceeds permitted in-memory size");
         return result;
     }
@@ -185,8 +180,8 @@ KdbxCoordinatorClient::Response KdbxCoordinatorClient::request(const QByteArray&
     result.status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     result.etag = reply->rawHeader("ETag");
     const qint64 maxBytes = (method == "GET" && action == QStringLiteral("/file"))
-        ? KdbxCoordinatorLimits::MaxKdbxBytes
-        : KdbxCoordinatorLimits::MaxControlBytes;
+        ? CoordinatorByteLimits::MaxKdbxBytes
+        : CoordinatorByteLimits::MaxControlBytes;
     result.bytes = readBoundedBody(reply, maxBytes, &result.transportError);
     if (reply->error() != QNetworkReply::NoError && result.status == 0 &&
         result.transportError.isEmpty()) {
@@ -254,7 +249,7 @@ bool KdbxCoordinatorClient::publish(const QByteArray& encryptedDatabase, QString
         if (error) *error = QStringLiteral("No valid editing lease or empty database");
         return false;
     }
-    if (static_cast<qint64>(encryptedDatabase.size()) > KdbxCoordinatorLimits::MaxKdbxBytes) {
+    if (static_cast<qint64>(encryptedDatabase.size()) > CoordinatorByteLimits::MaxKdbxBytes) {
         if (error) *error = QStringLiteral("KDBX exceeds permitted in-memory size");
         return false;
     }

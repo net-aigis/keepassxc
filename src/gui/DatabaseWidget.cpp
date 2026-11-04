@@ -68,6 +68,7 @@
 #include "gui/widgets/ElidedLabel.h"
 #include "keeshare/KeeShare.h"
 #include "remote/RemoteHandler.h"
+#include "remote/CoordinatorByteLimits.h"
 #include "remote/KdbxCoordinatorClient.h"
 #include "remote/RemoteSettings.h"
 
@@ -1410,14 +1411,12 @@ bool DatabaseWidget::syncWithCoordinator(const RemoteParams* params)
             fail(tr("Cannot read merged remote database."));
             return false;
         }
-        // Keep aligned with KeySafe CoordinatorByteLimits::MAX_KDBX_BYTES (64 MiB).
-        constexpr qint64 maxKdbxBytes = 64LL * 1024 * 1024;
-        if (merged.size() > maxKdbxBytes) {
+        if (merged.size() > CoordinatorByteLimits::MaxKdbxBytes) {
             fail(tr("Merged database exceeds the permitted in-memory size."));
             return false;
         }
-        remoteEncrypted = merged.read(maxKdbxBytes + 1);
-        if (remoteEncrypted.size() > maxKdbxBytes) {
+        remoteEncrypted = merged.read(CoordinatorByteLimits::MaxKdbxBytes + 1);
+        if (remoteEncrypted.size() > CoordinatorByteLimits::MaxKdbxBytes) {
             fail(tr("Merged database exceeds the permitted in-memory size."));
             return false;
         }
@@ -1432,13 +1431,12 @@ bool DatabaseWidget::syncWithCoordinator(const RemoteParams* params)
             fail(tr("Cannot read the local database for initial publication."));
             return false;
         }
-        constexpr qint64 maxKdbxBytes = 64LL * 1024 * 1024;
-        if (local.size() > maxKdbxBytes) {
+        if (local.size() > CoordinatorByteLimits::MaxKdbxBytes) {
             fail(tr("Local database exceeds the permitted in-memory size."));
             return false;
         }
-        remoteEncrypted = local.read(maxKdbxBytes + 1);
-        if (remoteEncrypted.size() > maxKdbxBytes) {
+        remoteEncrypted = local.read(CoordinatorByteLimits::MaxKdbxBytes + 1);
+        if (remoteEncrypted.size() > CoordinatorByteLimits::MaxKdbxBytes) {
             fail(tr("Local database exceeds the permitted in-memory size."));
             return false;
         }

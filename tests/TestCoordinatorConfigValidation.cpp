@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
+#include "gui/remote/CoordinatorByteLimits.h"
 #include "gui/remote/CoordinatorConfigValidation.h"
 
 #include <QCryptographicHash>
@@ -18,6 +19,7 @@ private slots:
     void validatesRevisionRules();
     void matchesPublishAcknowledgement();
     void matchesDownloadedCiphertext();
+    void byteLimitsMatchKeySafeCaps();
 };
 
 void TestCoordinatorConfigValidation::acceptsHttpsAndToken()
@@ -132,6 +134,13 @@ void TestCoordinatorConfigValidation::matchesDownloadedCiphertext()
         QByteArray(), '"' + rev + '"', rev));
     QVERIFY(!CoordinatorConfigValidation::matchesDownloadedContent(
         ciphertext + 'x', '"' + rev + '"', rev));
+}
+
+void TestCoordinatorConfigValidation::byteLimitsMatchKeySafeCaps()
+{
+    QCOMPARE(CoordinatorByteLimits::MaxKdbxBytes, 64LL * 1024 * 1024);
+    QCOMPARE(CoordinatorByteLimits::MaxControlBytes, 16LL * 1024);
+    QVERIFY(CoordinatorByteLimits::MaxControlBytes < CoordinatorByteLimits::MaxKdbxBytes);
 }
 
 QTEST_GUILESS_MAIN(TestCoordinatorConfigValidation)
