@@ -1,6 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include "KdbxCoordinatorClient.h"
 
+#include "CoordinatorConfigValidation.h"
+
 #include <QCryptographicHash>
 #include <QEventLoop>
 #include <QJsonDocument>
@@ -122,17 +124,10 @@ KdbxCoordinatorClient::Response KdbxCoordinatorClient::request(const QByteArray&
                                                                  const QByteArray& expectedRevision)
 {
     Response result;
-    const auto host = m_service.host();
-    if (m_service.scheme() != QStringLiteral("https") &&
-        !(m_service.scheme() == QStringLiteral("http") &&
-          (host == QStringLiteral("localhost") || host == QStringLiteral("127.0.0.1")))) {
-        result.transportError = QStringLiteral("HTTPS is required");
-        return result;
-    }
-    if (!m_service.userInfo().isEmpty() || m_service.hasQuery() || m_service.hasFragment() ||
-        !QRegularExpression(QStringLiteral("^[a-z0-9_-]{1,96}$")).match(m_databaseId).hasMatch() ||
-        m_accessToken.size() < 32 || m_accessToken.size() > 1024 ||
-        m_accessToken.contains('\n') || m_accessToken.contains('\r')) {
+    // Same printable-ASCII / URL rules as the settings UI — fail closed here too.
+    if (!CoordinatorConfigValidation::validate(
+             m_service.toString(), m_databaseId, QString::fromUtf8(m_accessToken))
+             .isEmpty()) {
         result.transportError = QStringLiteral("Invalid coordinator configuration");
         return result;
     }
@@ -215,16 +210,13 @@ bool KdbxCoordinatorClient::acquire(QString* error)
                                   : QStringLiteral("Acquire failed: HTTP %1 %2").arg(result.status).arg(result.transportError);
         return false;
     }
-    const auto token = field(result.bytes, QStringLiteral("token"));
-    const auto revision = field(result.bytes, QStringLiteral("revision"));
-    const QRegularExpression hex(QStringLiteral("^[a-f0-9]{64}$"));
-    if (!hex.match(QString::fromLatin1(token)).hasMatch() ||
-        (revision != "0" && !hex.match(QString::fromLatin1(revision)).hasMatch())) {
+    CoordinatorConfigValidation::LeaseFields leaseFields;
+    if (!CoordinatorConfigValidation::parseLeaseResponse(result.bytes, &leaseFields)) {
         if (error) *error = QStringLiteral("Malformed coordinator lease response");
         return false;
     }
-    m_lease = token;
-    m_revision = revision;
+    m_lease = leaseFields.token;
+    m_revision = leaseFields.revision;
     m_lost = false;
     m_renewTimer.start();
     return true;

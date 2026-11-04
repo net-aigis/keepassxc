@@ -1,10 +1,20 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include "CoordinatorConfigValidation.h"
 
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QRegularExpression>
 #include <QUrl>
 
 namespace CoordinatorConfigValidation {
+
+namespace {
+const QRegularExpression& hex64()
+{
+    static const QRegularExpression re(QStringLiteral("^[a-f0-9]{64}$"));
+    return re;
+}
+} // namespace
 
 QString validate(const QString& url, const QString& databaseId, const QString& accessToken)
 {
@@ -35,6 +45,34 @@ QString validate(const QString& url, const QString& databaseId, const QString& a
             "Coordinator access token must be 32-1024 printable ASCII characters without whitespace.");
     }
     return {};
+}
+
+bool isValidLeaseToken(const QByteArray& token)
+{
+    return hex64().match(QString::fromLatin1(token)).hasMatch();
+}
+
+bool isValidRevision(const QByteArray& revision)
+{
+    return revision == "0" || hex64().match(QString::fromLatin1(revision)).hasMatch();
+}
+
+bool parseLeaseResponse(const QByteArray& body, LeaseFields* out)
+{
+    QJsonParseError parseError;
+    const auto document = QJsonDocument::fromJson(body, &parseError);
+    if (parseError.error != QJsonParseError::NoError || !document.isObject() || !out) {
+        return false;
+    }
+    const QJsonObject object = document.object();
+    const QByteArray token = object.value(QStringLiteral("token")).toString().toUtf8();
+    const QByteArray revision = object.value(QStringLiteral("revision")).toString().toUtf8();
+    if (!isValidLeaseToken(token) || !isValidRevision(revision)) {
+        return false;
+    }
+    out->token = token;
+    out->revision = revision;
+    return true;
 }
 
 } // namespace CoordinatorConfigValidation

@@ -11,6 +11,10 @@ private slots:
     void rejectsCleartextNonLoopback();
     void rejectsShortToken();
     void rejectsBadDatabaseId();
+    void rejectsNonPrintableToken();
+    void acceptsLeaseResponse();
+    void rejectsMalformedLeaseResponse();
+    void validatesRevisionRules();
 };
 
 void TestCoordinatorConfigValidation::acceptsHttpsAndToken()
@@ -52,6 +56,50 @@ void TestCoordinatorConfigValidation::rejectsBadDatabaseId()
                  QStringLiteral("Bad ID"),
                  QString(32, QLatin1Char('a')))
                  .isEmpty());
+}
+
+void TestCoordinatorConfigValidation::rejectsNonPrintableToken()
+{
+    QString token = QString(32, QLatin1Char('a'));
+    token[8] = QLatin1Char('\t');
+    QVERIFY(!CoordinatorConfigValidation::validate(
+                 QStringLiteral("https://coord.example/"),
+                 QStringLiteral("shared-db"),
+                 token)
+                 .isEmpty());
+}
+
+void TestCoordinatorConfigValidation::acceptsLeaseResponse()
+{
+    const QByteArray token = QByteArray(64, 'a');
+    const QByteArray body =
+        QByteArrayLiteral("{\"token\":\"") + token + QByteArrayLiteral("\",\"revision\":\"0\"}");
+    CoordinatorConfigValidation::LeaseFields fields;
+    QVERIFY(CoordinatorConfigValidation::parseLeaseResponse(body, &fields));
+    QCOMPARE(fields.token, token);
+    QCOMPARE(fields.revision, QByteArrayLiteral("0"));
+}
+
+void TestCoordinatorConfigValidation::rejectsMalformedLeaseResponse()
+{
+    CoordinatorConfigValidation::LeaseFields fields;
+    QVERIFY(!CoordinatorConfigValidation::parseLeaseResponse(
+        QByteArrayLiteral("{\"token\":\"short\",\"revision\":\"0\"}"), &fields));
+    QVERIFY(!CoordinatorConfigValidation::parseLeaseResponse(
+        QByteArrayLiteral("not-json"), &fields));
+    QVERIFY(!CoordinatorConfigValidation::parseLeaseResponse(
+        QByteArrayLiteral("{\"token\":\"") + QByteArray(64, 'A')
+            + QByteArrayLiteral("\",\"revision\":\"0\"}"),
+        &fields));
+}
+
+void TestCoordinatorConfigValidation::validatesRevisionRules()
+{
+    QVERIFY(CoordinatorConfigValidation::isValidRevision(QByteArrayLiteral("0")));
+    QVERIFY(CoordinatorConfigValidation::isValidRevision(QByteArray(64, 'b')));
+    QVERIFY(!CoordinatorConfigValidation::isValidRevision(QByteArrayLiteral("1")));
+    QVERIFY(!CoordinatorConfigValidation::isValidRevision(QByteArray(63, 'c')));
+    QVERIFY(!CoordinatorConfigValidation::isValidLeaseToken(QByteArrayLiteral("0")));
 }
 
 QTEST_GUILESS_MAIN(TestCoordinatorConfigValidation)
