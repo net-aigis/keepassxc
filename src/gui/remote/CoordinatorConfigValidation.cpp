@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include "CoordinatorConfigValidation.h"
 
+#include <QCryptographicHash>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QRegularExpression>
@@ -90,6 +91,18 @@ bool matchesPublishAck(const QByteArray& body,
     const QByteArray revision =
         document.object().value(QStringLiteral("revision")).toString().toUtf8();
     return revision == expectedRevisionHex && etag == '"' + expectedRevisionHex + '"';
+}
+
+bool matchesDownloadedContent(const QByteArray& ciphertext,
+                              const QByteArray& etag,
+                              const QByteArray& expectedRevisionHex)
+{
+    if (!isValidLeaseToken(expectedRevisionHex) || ciphertext.isEmpty()) {
+        return false;
+    }
+    const QByteArray digest =
+        QCryptographicHash::hash(ciphertext, QCryptographicHash::Sha256).toHex();
+    return digest == expectedRevisionHex && etag == '"' + expectedRevisionHex + '"';
 }
 
 } // namespace CoordinatorConfigValidation

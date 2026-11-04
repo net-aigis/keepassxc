@@ -238,7 +238,7 @@ bool KdbxCoordinatorClient::download(QByteArray* encryptedDatabase, bool* exists
         if (error) *error = QStringLiteral("Download failed: HTTP %1 %2").arg(result.status).arg(result.transportError);
         return false;
     }
-    if (hash(result.bytes) != m_revision || result.etag != '"' + m_revision + '"') {
+    if (!CoordinatorConfigValidation::matchesDownloadedContent(result.bytes, result.etag, m_revision)) {
         invalidate();
         if (error) *error = QStringLiteral("Remote database changed unexpectedly");
         return false;

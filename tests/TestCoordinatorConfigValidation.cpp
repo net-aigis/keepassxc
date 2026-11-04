@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include "gui/remote/CoordinatorConfigValidation.h"
 
+#include <QCryptographicHash>
 #include <QTest>
 
 class TestCoordinatorConfigValidation : public QObject
@@ -16,6 +17,7 @@ private slots:
     void rejectsMalformedLeaseResponse();
     void validatesRevisionRules();
     void matchesPublishAcknowledgement();
+    void matchesDownloadedCiphertext();
 };
 
 void TestCoordinatorConfigValidation::acceptsHttpsAndToken()
@@ -113,6 +115,23 @@ void TestCoordinatorConfigValidation::matchesPublishAcknowledgement()
     QVERIFY(!CoordinatorConfigValidation::matchesPublishAck(body, rev, rev)); // etag must be quoted
     QVERIFY(!CoordinatorConfigValidation::matchesPublishAck(
         QByteArrayLiteral("{\"revision\":\"0\"}"), "\"0\"", QByteArrayLiteral("0")));
+}
+
+void TestCoordinatorConfigValidation::matchesDownloadedCiphertext()
+{
+    const QByteArray ciphertext = QByteArrayLiteral("kdbx-bytes-for-download-check");
+    const QByteArray rev =
+        QCryptographicHash::hash(ciphertext, QCryptographicHash::Sha256).toHex();
+    QVERIFY(CoordinatorConfigValidation::matchesDownloadedContent(
+        ciphertext, '"' + rev + '"', rev));
+    QVERIFY(!CoordinatorConfigValidation::matchesDownloadedContent(
+        ciphertext, '"' + rev + '"', QByteArray(64, 'f')));
+    QVERIFY(!CoordinatorConfigValidation::matchesDownloadedContent(
+        ciphertext, rev, rev)); // etag must be quoted
+    QVERIFY(!CoordinatorConfigValidation::matchesDownloadedContent(
+        QByteArray(), '"' + rev + '"', rev));
+    QVERIFY(!CoordinatorConfigValidation::matchesDownloadedContent(
+        ciphertext + 'x', '"' + rev + '"', rev));
 }
 
 QTEST_GUILESS_MAIN(TestCoordinatorConfigValidation)

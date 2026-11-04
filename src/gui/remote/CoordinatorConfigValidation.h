@@ -35,4 +35,12 @@ bool parseLeaseResponse(const QByteArray& body, LeaseFields* out);
 bool matchesPublishAck(const QByteArray& body,
                        const QByteArray& etag,
                        const QByteArray& expectedRevisionHex);
+
+/**
+ * Downloaded ciphertext must hash to the lease revision and carry a matching
+ * quoted ETag. Mismatch means the remote changed; caller must fail closed.
+ */
+bool matchesDownloadedContent(const QByteArray& ciphertext,
+                              const QByteArray& etag,
+                              const QByteArray& expectedRevisionHex);
 } // namespace CoordinatorConfigValidation
