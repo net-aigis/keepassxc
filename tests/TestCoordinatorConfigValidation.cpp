@@ -23,6 +23,7 @@ private slots:
     void extractsJsonStringFields();
     void detectsBusyLockStatus();
     void detectsLostLeaseAndStaleRevisionStatus();
+    void acceptsBoundedKdbxPayloadSizes();
 };
 
 void TestCoordinatorConfigValidation::acceptsHttpsAndToken()
@@ -178,6 +179,17 @@ void TestCoordinatorConfigValidation::detectsLostLeaseAndStaleRevisionStatus()
     QVERIFY(!CoordinatorConfigValidation::isStaleRevisionStatus(409));
     QVERIFY(!CoordinatorConfigValidation::isStaleRevisionStatus(423));
     QVERIFY(!CoordinatorConfigValidation::isStaleRevisionStatus(200));
+}
+
+void TestCoordinatorConfigValidation::acceptsBoundedKdbxPayloadSizes()
+{
+    QVERIFY(CoordinatorConfigValidation::isAcceptableKdbxPayload(1));
+    QVERIFY(CoordinatorConfigValidation::isAcceptableKdbxPayload(
+        CoordinatorByteLimits::MaxKdbxBytes));
+    QVERIFY(!CoordinatorConfigValidation::isAcceptableKdbxPayload(0));
+    QVERIFY(!CoordinatorConfigValidation::isAcceptableKdbxPayload(-1));
+    QVERIFY(!CoordinatorConfigValidation::isAcceptableKdbxPayload(
+        CoordinatorByteLimits::MaxKdbxBytes + 1));
 }
 
 QTEST_GUILESS_MAIN(TestCoordinatorConfigValidation)

@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include "CoordinatorConfigValidation.h"
+#include "CoordinatorByteLimits.h"
 
 #include <QCryptographicHash>
 #include <QJsonDocument>
@@ -71,6 +72,11 @@ bool isLostLeaseStatus(int httpStatus)
 bool isStaleRevisionStatus(int httpStatus)
 {
     return httpStatus == 412;
+}
+
+bool isAcceptableKdbxPayload(qint64 sizeBytes)
+{
+    return sizeBytes > 0 && sizeBytes <= CoordinatorByteLimits::MaxKdbxBytes;
 }
 
 bool isValidLeaseToken(const QByteArray& token)

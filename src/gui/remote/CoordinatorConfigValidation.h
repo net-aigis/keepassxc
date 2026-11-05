@@ -21,6 +21,9 @@ bool isBusyLockStatus(int httpStatus);
 bool isLostLeaseStatus(int httpStatus);
 bool isStaleRevisionStatus(int httpStatus);
 
+/** Non-empty KDBX body within CoordinatorByteLimits::MaxKdbxBytes. */
+bool isAcceptableKdbxPayload(qint64 sizeBytes);
+
 /** Lease token: exactly 64 lowercase hex digits. */
 bool isValidLeaseToken(const QByteArray& token);
 

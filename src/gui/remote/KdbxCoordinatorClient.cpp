@@ -240,12 +240,12 @@ bool KdbxCoordinatorClient::download(QByteArray* encryptedDatabase, bool* exists
 
 bool KdbxCoordinatorClient::publish(const QByteArray& encryptedDatabase, QString* error)
 {
-    if (!hasLease() || encryptedDatabase.isEmpty()) {
-        if (error) *error = QStringLiteral("No valid editing lease or empty database");
+    if (!hasLease()) {
+        if (error) *error = QStringLiteral("No valid editing lease");
         return false;
     }
-    if (static_cast<qint64>(encryptedDatabase.size()) > CoordinatorByteLimits::MaxKdbxBytes) {
-        if (error) *error = QStringLiteral("KDBX exceeds permitted in-memory size");
+    if (!CoordinatorConfigValidation::isAcceptableKdbxPayload(encryptedDatabase.size())) {
+        if (error) *error = QStringLiteral("KDBX empty or exceeds permitted in-memory size");
         return false;
     }
     const auto result = request("PUT", QStringLiteral("/file"), encryptedDatabase, m_lease, m_revision);
