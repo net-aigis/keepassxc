@@ -63,6 +63,16 @@ bool isBusyLockStatus(int httpStatus)
     return httpStatus == 423;
 }
 
+bool isLostLeaseStatus(int httpStatus)
+{
+    return httpStatus == 409;
+}
+
+bool isStaleRevisionStatus(int httpStatus)
+{
+    return httpStatus == 412;
+}
+
 bool isValidLeaseToken(const QByteArray& token)
 {
     return hex64().match(QString::fromLatin1(token)).hasMatch();

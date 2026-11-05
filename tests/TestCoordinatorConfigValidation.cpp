@@ -22,6 +22,7 @@ private slots:
     void byteLimitsMatchKeySafeCaps();
     void extractsJsonStringFields();
     void detectsBusyLockStatus();
+    void detectsLostLeaseAndStaleRevisionStatus();
 };
 
 void TestCoordinatorConfigValidation::acceptsHttpsAndToken()
@@ -165,6 +166,18 @@ void TestCoordinatorConfigValidation::detectsBusyLockStatus()
     QVERIFY(!CoordinatorConfigValidation::isBusyLockStatus(200));
     QVERIFY(!CoordinatorConfigValidation::isBusyLockStatus(409));
     QVERIFY(!CoordinatorConfigValidation::isBusyLockStatus(0));
+}
+
+void TestCoordinatorConfigValidation::detectsLostLeaseAndStaleRevisionStatus()
+{
+    QVERIFY(CoordinatorConfigValidation::isLostLeaseStatus(409));
+    QVERIFY(!CoordinatorConfigValidation::isLostLeaseStatus(412));
+    QVERIFY(!CoordinatorConfigValidation::isLostLeaseStatus(423));
+    QVERIFY(!CoordinatorConfigValidation::isLostLeaseStatus(200));
+    QVERIFY(CoordinatorConfigValidation::isStaleRevisionStatus(412));
+    QVERIFY(!CoordinatorConfigValidation::isStaleRevisionStatus(409));
+    QVERIFY(!CoordinatorConfigValidation::isStaleRevisionStatus(423));
+    QVERIFY(!CoordinatorConfigValidation::isStaleRevisionStatus(200));
 }
 
 QTEST_GUILESS_MAIN(TestCoordinatorConfigValidation)

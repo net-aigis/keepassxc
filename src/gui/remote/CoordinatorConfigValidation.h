@@ -17,6 +17,10 @@ QByteArray jsonStringField(const QByteArray& body, const QString& key);
 /** HTTP 423 means another editor holds the exclusive lease. */
 bool isBusyLockStatus(int httpStatus);
 
+/** HTTP 409: lease lost / conflict; 412: stale If-Match revision. */
+bool isLostLeaseStatus(int httpStatus);
+bool isStaleRevisionStatus(int httpStatus);
+
 /** Lease token: exactly 64 lowercase hex digits. */
 bool isValidLeaseToken(const QByteArray& token);
 

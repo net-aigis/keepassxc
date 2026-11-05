@@ -249,7 +249,8 @@ bool KdbxCoordinatorClient::publish(const QByteArray& encryptedDatabase, QString
         return false;
     }
     const auto result = request("PUT", QStringLiteral("/file"), encryptedDatabase, m_lease, m_revision);
-    if (result.status == 409 || result.status == 412) {
+    if (CoordinatorConfigValidation::isLostLeaseStatus(result.status)
+        || CoordinatorConfigValidation::isStaleRevisionStatus(result.status)) {
         invalidate();
     }
     if (result.status != 200) {
