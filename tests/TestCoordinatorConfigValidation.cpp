@@ -21,6 +21,7 @@ private slots:
     void matchesDownloadedCiphertext();
     void byteLimitsMatchKeySafeCaps();
     void extractsJsonStringFields();
+    void detectsBusyLockStatus();
 };
 
 void TestCoordinatorConfigValidation::acceptsHttpsAndToken()
@@ -156,6 +157,14 @@ void TestCoordinatorConfigValidation::extractsJsonStringFields()
     QCOMPARE(CoordinatorConfigValidation::jsonStringField(
                  QByteArrayLiteral("not-json"), QStringLiteral("token")),
              QByteArray());
+}
+
+void TestCoordinatorConfigValidation::detectsBusyLockStatus()
+{
+    QVERIFY(CoordinatorConfigValidation::isBusyLockStatus(423));
+    QVERIFY(!CoordinatorConfigValidation::isBusyLockStatus(200));
+    QVERIFY(!CoordinatorConfigValidation::isBusyLockStatus(409));
+    QVERIFY(!CoordinatorConfigValidation::isBusyLockStatus(0));
 }
 
 QTEST_GUILESS_MAIN(TestCoordinatorConfigValidation)

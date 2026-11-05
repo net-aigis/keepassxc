@@ -194,7 +194,7 @@ bool KdbxCoordinatorClient::acquire(QString* error)
     }
     const QJsonObject body{{QStringLiteral("owner"), m_owner}};
     auto result = request("POST", QStringLiteral("/lock"), QJsonDocument(body).toJson(QJsonDocument::Compact));
-    m_busy = result.status == 423;
+    m_busy = CoordinatorConfigValidation::isBusyLockStatus(result.status);
     if (result.status != 200) {
         if (error) *error = m_busy ? QStringLiteral("Database is locked by another editor")
                                   : QStringLiteral("Acquire failed: HTTP %1 %2").arg(result.status).arg(result.transportError);

@@ -14,6 +14,9 @@ QString validate(const QString& url, const QString& databaseId, const QString& a
 /** Extract a JSON string field; empty on parse error or missing key. */
 QByteArray jsonStringField(const QByteArray& body, const QString& key);
 
+/** HTTP 423 means another editor holds the exclusive lease. */
+bool isBusyLockStatus(int httpStatus);
+
 /** Lease token: exactly 64 lowercase hex digits. */
 bool isValidLeaseToken(const QByteArray& token);
 

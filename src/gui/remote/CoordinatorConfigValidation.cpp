@@ -58,6 +58,11 @@ QByteArray jsonStringField(const QByteArray& body, const QString& key)
     return document.object().value(key).toString().toUtf8();
 }
 
+bool isBusyLockStatus(int httpStatus)
+{
+    return httpStatus == 423;
+}
+
 bool isValidLeaseToken(const QByteArray& token)
 {
     return hex64().match(QString::fromLatin1(token)).hasMatch();
