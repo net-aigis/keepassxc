@@ -24,6 +24,9 @@ bool isStaleRevisionStatus(int httpStatus);
 /** Non-empty KDBX body within CoordinatorByteLimits::MaxKdbxBytes. */
 bool isAcceptableKdbxPayload(qint64 sizeBytes);
 
+/** HTTP 200 means lease renew succeeded; anything else invalidates. */
+bool isSuccessfulRenewStatus(int httpStatus);
+
 /** Lease token: exactly 64 lowercase hex digits. */
 bool isValidLeaseToken(const QByteArray& token);
 

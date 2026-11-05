@@ -278,7 +278,7 @@ bool KdbxCoordinatorClient::renew(QString* error)
         return false;
     }
     const auto result = request("POST", QStringLiteral("/renew"), QByteArrayLiteral("{}"), m_lease);
-    if (result.status != 200) {
+    if (!CoordinatorConfigValidation::isSuccessfulRenewStatus(result.status)) {
         invalidate();
         if (error) *error = QStringLiteral("Lease renewal failed: HTTP %1 %2").arg(result.status).arg(result.transportError);
         return false;

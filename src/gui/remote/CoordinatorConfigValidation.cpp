@@ -79,6 +79,11 @@ bool isAcceptableKdbxPayload(qint64 sizeBytes)
     return sizeBytes > 0 && sizeBytes <= CoordinatorByteLimits::MaxKdbxBytes;
 }
 
+bool isSuccessfulRenewStatus(int httpStatus)
+{
+    return httpStatus == 200;
+}
+
 bool isValidLeaseToken(const QByteArray& token)
 {
     return hex64().match(QString::fromLatin1(token)).hasMatch();
