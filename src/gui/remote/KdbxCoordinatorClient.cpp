@@ -295,7 +295,7 @@ bool KdbxCoordinatorClient::release(QString* error)
     m_revision.clear();
     m_lost = true;
     const auto result = request("DELETE", QStringLiteral("/lock"), {}, token);
-    if (result.status != 204 && result.status != 409) {
+    if (!CoordinatorConfigValidation::isAcceptableReleaseStatus(result.status)) {
         if (error) *error = QStringLiteral("Lease release not confirmed: HTTP %1 %2").arg(result.status).arg(result.transportError);
         return false;
     }

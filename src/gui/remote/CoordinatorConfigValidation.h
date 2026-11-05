@@ -27,6 +27,9 @@ bool isAcceptableKdbxPayload(qint64 sizeBytes);
 /** HTTP 200 means lease renew succeeded; anything else invalidates. */
 bool isSuccessfulRenewStatus(int httpStatus);
 
+/** DELETE /lock: 204 released, 409 already gone — both acceptable. */
+bool isAcceptableReleaseStatus(int httpStatus);
+
 /** Lease token: exactly 64 lowercase hex digits. */
 bool isValidLeaseToken(const QByteArray& token);
 

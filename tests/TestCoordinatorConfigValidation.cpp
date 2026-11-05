@@ -25,6 +25,7 @@ private slots:
     void detectsLostLeaseAndStaleRevisionStatus();
     void acceptsBoundedKdbxPayloadSizes();
     void detectsSuccessfulRenewStatus();
+    void detectsAcceptableReleaseStatus();
 };
 
 void TestCoordinatorConfigValidation::acceptsHttpsAndToken()
@@ -199,6 +200,15 @@ void TestCoordinatorConfigValidation::detectsSuccessfulRenewStatus()
     QVERIFY(!CoordinatorConfigValidation::isSuccessfulRenewStatus(409));
     QVERIFY(!CoordinatorConfigValidation::isSuccessfulRenewStatus(423));
     QVERIFY(!CoordinatorConfigValidation::isSuccessfulRenewStatus(0));
+}
+
+void TestCoordinatorConfigValidation::detectsAcceptableReleaseStatus()
+{
+    QVERIFY(CoordinatorConfigValidation::isAcceptableReleaseStatus(204));
+    QVERIFY(CoordinatorConfigValidation::isAcceptableReleaseStatus(409));
+    QVERIFY(!CoordinatorConfigValidation::isAcceptableReleaseStatus(200));
+    QVERIFY(!CoordinatorConfigValidation::isAcceptableReleaseStatus(423));
+    QVERIFY(!CoordinatorConfigValidation::isAcceptableReleaseStatus(0));
 }
 
 QTEST_GUILESS_MAIN(TestCoordinatorConfigValidation)

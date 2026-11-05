@@ -84,6 +84,11 @@ bool isSuccessfulRenewStatus(int httpStatus)
     return httpStatus == 200;
 }
 
+bool isAcceptableReleaseStatus(int httpStatus)
+{
+    return httpStatus == 204 || httpStatus == 409;
+}
+
 bool isValidLeaseToken(const QByteArray& token)
 {
     return hex64().match(QString::fromLatin1(token)).hasMatch();
