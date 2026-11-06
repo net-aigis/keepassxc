@@ -195,7 +195,7 @@ bool KdbxCoordinatorClient::acquire(QString* error)
     const QJsonObject body{{QStringLiteral("owner"), m_owner}};
     auto result = request("POST", QStringLiteral("/lock"), QJsonDocument(body).toJson(QJsonDocument::Compact));
     m_busy = CoordinatorConfigValidation::isBusyLockStatus(result.status);
-    if (result.status != 200) {
+    if (!CoordinatorConfigValidation::isSuccessfulAcquireStatus(result.status)) {
         if (error) *error = m_busy ? QStringLiteral("Database is locked by another editor")
                                   : QStringLiteral("Acquire failed: HTTP %1 %2").arg(result.status).arg(result.transportError);
         return false;
@@ -219,12 +219,12 @@ bool KdbxCoordinatorClient::download(QByteArray* encryptedDatabase, bool* exists
         return false;
     }
     auto result = request("GET", QStringLiteral("/file"));
-    if (result.status == 404 && m_revision == "0") {
+    if (CoordinatorConfigValidation::isEmptyDatabaseDownload(result.status, m_revision)) {
         if (exists) *exists = false;
         if (encryptedDatabase) encryptedDatabase->clear();
         return true;
     }
-    if (result.status != 200) {
+    if (!CoordinatorConfigValidation::isSuccessfulDownloadStatus(result.status)) {
         if (error) *error = QStringLiteral("Download failed: HTTP %1 %2").arg(result.status).arg(result.transportError);
         return false;
     }

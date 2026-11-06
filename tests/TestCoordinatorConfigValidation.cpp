@@ -26,6 +26,7 @@ private slots:
     void acceptsBoundedKdbxPayloadSizes();
     void detectsSuccessfulRenewStatus();
     void detectsAcceptableReleaseStatus();
+    void detectsAcquireDownloadAndEmptyTipStatus();
 };
 
 void TestCoordinatorConfigValidation::acceptsHttpsAndToken()
@@ -209,6 +210,17 @@ void TestCoordinatorConfigValidation::detectsAcceptableReleaseStatus()
     QVERIFY(!CoordinatorConfigValidation::isAcceptableReleaseStatus(200));
     QVERIFY(!CoordinatorConfigValidation::isAcceptableReleaseStatus(423));
     QVERIFY(!CoordinatorConfigValidation::isAcceptableReleaseStatus(0));
+}
+
+void TestCoordinatorConfigValidation::detectsAcquireDownloadAndEmptyTipStatus()
+{
+    QVERIFY(CoordinatorConfigValidation::isSuccessfulAcquireStatus(200));
+    QVERIFY(!CoordinatorConfigValidation::isSuccessfulAcquireStatus(423));
+    QVERIFY(CoordinatorConfigValidation::isSuccessfulDownloadStatus(200));
+    QVERIFY(!CoordinatorConfigValidation::isSuccessfulDownloadStatus(404));
+    QVERIFY(CoordinatorConfigValidation::isEmptyDatabaseDownload(404, QByteArrayLiteral("0")));
+    QVERIFY(!CoordinatorConfigValidation::isEmptyDatabaseDownload(404, QByteArray(64, 'a')));
+    QVERIFY(!CoordinatorConfigValidation::isEmptyDatabaseDownload(200, QByteArrayLiteral("0")));
 }
 
 QTEST_GUILESS_MAIN(TestCoordinatorConfigValidation)

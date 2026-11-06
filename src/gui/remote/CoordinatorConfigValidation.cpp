@@ -64,6 +64,21 @@ bool isBusyLockStatus(int httpStatus)
     return httpStatus == 423;
 }
 
+bool isSuccessfulAcquireStatus(int httpStatus)
+{
+    return httpStatus == 200;
+}
+
+bool isSuccessfulDownloadStatus(int httpStatus)
+{
+    return httpStatus == 200;
+}
+
+bool isEmptyDatabaseDownload(int httpStatus, const QByteArray& revision)
+{
+    return httpStatus == 404 && revision == "0";
+}
+
 bool isLostLeaseStatus(int httpStatus)
 {
     return httpStatus == 409;

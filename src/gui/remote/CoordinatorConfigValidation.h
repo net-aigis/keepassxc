@@ -17,6 +17,13 @@ QByteArray jsonStringField(const QByteArray& body, const QString& key);
 /** HTTP 423 means another editor holds the exclusive lease. */
 bool isBusyLockStatus(int httpStatus);
 
+/** HTTP 200: lock acquired or ciphertext download succeeded. */
+bool isSuccessfulAcquireStatus(int httpStatus);
+bool isSuccessfulDownloadStatus(int httpStatus);
+
+/** HTTP 404 with revision "0" means the shared database has no tip yet. */
+bool isEmptyDatabaseDownload(int httpStatus, const QByteArray& revision);
+
 /** HTTP 409: lease lost / conflict; 412: stale If-Match revision. */
 bool isLostLeaseStatus(int httpStatus);
 bool isStaleRevisionStatus(int httpStatus);
