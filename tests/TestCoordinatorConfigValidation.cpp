@@ -25,6 +25,7 @@ private slots:
     void detectsLostLeaseAndStaleRevisionStatus();
     void acceptsBoundedKdbxPayloadSizes();
     void detectsSuccessfulRenewStatus();
+    void detectsSuccessfulPublishStatus();
     void detectsAcceptableReleaseStatus();
     void detectsAcquireDownloadAndEmptyTipStatus();
 };
@@ -201,6 +202,14 @@ void TestCoordinatorConfigValidation::detectsSuccessfulRenewStatus()
     QVERIFY(!CoordinatorConfigValidation::isSuccessfulRenewStatus(409));
     QVERIFY(!CoordinatorConfigValidation::isSuccessfulRenewStatus(423));
     QVERIFY(!CoordinatorConfigValidation::isSuccessfulRenewStatus(0));
+}
+
+void TestCoordinatorConfigValidation::detectsSuccessfulPublishStatus()
+{
+    QVERIFY(CoordinatorConfigValidation::isSuccessfulPublishStatus(200));
+    QVERIFY(!CoordinatorConfigValidation::isSuccessfulPublishStatus(409));
+    QVERIFY(!CoordinatorConfigValidation::isSuccessfulPublishStatus(412));
+    QVERIFY(!CoordinatorConfigValidation::isSuccessfulPublishStatus(0));
 }
 
 void TestCoordinatorConfigValidation::detectsAcceptableReleaseStatus()

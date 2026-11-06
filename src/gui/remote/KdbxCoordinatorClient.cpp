@@ -253,7 +253,7 @@ bool KdbxCoordinatorClient::publish(const QByteArray& encryptedDatabase, QString
         || CoordinatorConfigValidation::isStaleRevisionStatus(result.status)) {
         invalidate();
     }
-    if (result.status != 200) {
+    if (!CoordinatorConfigValidation::isSuccessfulPublishStatus(result.status)) {
         if (error) *error = QStringLiteral("Publication failed: HTTP %1 %2").arg(result.status).arg(result.transportError);
         return false;
     }

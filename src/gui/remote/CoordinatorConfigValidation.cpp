@@ -99,6 +99,11 @@ bool isSuccessfulRenewStatus(int httpStatus)
     return httpStatus == 200;
 }
 
+bool isSuccessfulPublishStatus(int httpStatus)
+{
+    return httpStatus == 200;
+}
+
 bool isAcceptableReleaseStatus(int httpStatus)
 {
     return httpStatus == 204 || httpStatus == 409;

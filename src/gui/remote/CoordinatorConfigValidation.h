@@ -31,8 +31,9 @@ bool isStaleRevisionStatus(int httpStatus);
 /** Non-empty KDBX body within CoordinatorByteLimits::MaxKdbxBytes. */
 bool isAcceptableKdbxPayload(qint64 sizeBytes);
 
-/** HTTP 200 means lease renew succeeded; anything else invalidates. */
+/** HTTP 200 means lease renew or publish succeeded; anything else fails closed. */
 bool isSuccessfulRenewStatus(int httpStatus);
+bool isSuccessfulPublishStatus(int httpStatus);
 
 /** DELETE /lock: 204 released, 409 already gone — both acceptable. */
 bool isAcceptableReleaseStatus(int httpStatus);
